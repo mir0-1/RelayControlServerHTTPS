@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <openssl/ssl.h>
-#include "../../../HttpLibrary/src/HttpRequest.h"
+#include <fstream>
 
 void Server::createSocket(const char* address, int port)
 {
@@ -50,19 +50,71 @@ void Server::createContext()
 
 void Server::configureContext()
 {
-    if (SSL_CTX_use_certificate_file(sslContext, "resources/cert.pem", SSL_FILETYPE_PEM) <= 0)
+    if (SSL_CTX_use_certificate_file(sslContext, "cert/cert.pem", SSL_FILETYPE_PEM) <= 0)
     {
         logger << "Could not use cert file" << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    if (SSL_CTX_use_PrivateKey_file(sslContext, "resources/key.pem", SSL_FILETYPE_PEM) <= 0 )
+    if (SSL_CTX_use_PrivateKey_file(sslContext, "cert/key.pem", SSL_FILETYPE_PEM) <= 0 )
     {
         logger << "Could not use key file" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     SSL_CTX_set_verify(sslContext, SSL_VERIFY_NONE, NULL);
+}
+
+void Server::handleRequest(const HttpRequest& request)
+{
+    HttpRequestType requestType = request.getRequestType();
+    if (!request.isValid() || (requestType != HttpRequestType::GET && requestType != HttpRequestType::PUT))
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+        return;
+    }
+
+    std::string pathToResource = request.getPathToResource();
+
+    if (pathToResource[0] != '/')
+        pathToResource.insert(0, "resources/");
+    else
+        pathToResource.insert(0, "resources");
+
+    std::ifstream file(pathToResource);
+
+    if (file.is_open())
+    {
+        file.seekg(0, std::ios::end);
+        std::streampos fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::string fileContents;
+        fileContents.resize(fileSize);
+
+        file.read(&fileContents[0], fileSize);
+        file.close();
+
+        const std::string& extension = request.getResourceExtension();
+
+        responseBuilder.reset();
+
+        if (request.getResourceExtension() == "html")
+            responseBuilder.setContentType(HTML);
+
+        responseBuilder
+            .setStatusCode(HttpStatusCode::OK)
+            .setRawBody(fileContents);
+    } 
+    else 
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::NOT_FOUND);
+    }
 }
 
 void Server::start()
@@ -95,11 +147,8 @@ void Server::start()
                 buffer[bytesRead] = '\0';
                 HttpRequest request(buffer);
 
-                std::string reply = responseBuilder
-                                        .setStatusCode(HttpStatusCode::OK)
-                                        .setContentType(HttpContentType::HTML)
-                                        .setRawBody("<html><b>Hello world!</b></html>")
-                                        .build();
+                handleRequest(request);
+                std::string reply = responseBuilder.build();
 
                 SSL_write(ssl, reply.c_str(), reply.length());
             }

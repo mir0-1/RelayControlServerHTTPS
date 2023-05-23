@@ -1,5 +1,6 @@
 #include <iostream>
 #include <openssl/ssl.h>
+#include "../../../HttpLibrary/src/HttpRequest.h"
 #include "../../../HttpLibrary/src/HttpResponseBuilder.h"
 
 class Server
@@ -13,6 +14,8 @@ class Server
 		void createSocket(const char* address, int port);
 		void createContext();
 		void configureContext();
+		void handleRequest(const HttpRequest& request);
+
 	public:
 		void start();
 
