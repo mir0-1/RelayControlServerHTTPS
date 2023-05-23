@@ -1,0 +1,48 @@
+html {
+  font-family: Helvetica;
+  display: inline-block;
+  margin: 0px auto;
+  text-align: center;
+}
+
+h1 {
+  color: #0F3376;
+  padding: 2vh;
+}
+
+p {
+  font-size: 1.5rem;
+}
+
+.button {
+  display: inline-block;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 16px 40px;
+  text-decoration: none;
+  font-size: 30px;
+  margin: 2px;
+  cursor: pointer;
+}
+
+.green-bknd {
+	background-color: #3b8340;
+}
+
+.red-bknd {
+  background-color: #f44336;
+}
+
+.tbl {
+	box-shadow: 5px 10px 8px #888888;
+}
+
+td,th,tr {
+	background-color: #9cb3e9 ;
+	padding: 5px 15px 5px 15px;
+}
+
+body {
+	background-color: lightgray;
+}

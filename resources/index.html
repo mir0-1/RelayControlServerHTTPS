@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Web Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body style="margin: auto; width: fit-content;">
+  <h1>Web Interface</h1>
+	<table class= "tbl">
+	<tr>
+    <th><h2>Relay 1</h2></th>
+    <th><h2>Relay 2</h2></th>
+  </tr>
+  <tr>
+    <td><p>Състояние: <strong id="state1"> %STATE1%</strong></p>
+    <hr>
+    <p><button  class="button green-bknd" onclick='turnOnRelay1()'>ВКЛ.</button></p>
+    <p><button class="button red-bknd" onclick='turnOffRelay1()'>ИЗКЛ.</button></p>
+    <hr>
+    <p class="voltage-display">Напрежение: <strong id="voltage1"> %voltage1%</strong></p>
+</td>
+    <td><p>Състояние: <strong id="state2"> %STATE2%</strong></p>
+    <hr>
+    <p><button class="button green-bknd" onclick='turnOnRelay2()'>ВКЛ.</button></p>
+    <p><button class="button red-bknd" onclick='turnOffRelay2()'>ИЗКЛ.</button></p>
+    <hr>
+    <p class="voltage-display">Напрежение: <strong id="voltage2"> %voltage2%</strong></p>
+</td>
+  </tr>
+</table>
+
+
+</body>
+<script>
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
+var relayData = {
+	state1: 0,
+	state2: 0,
+	voltage1: 0,
+	voltage2: 0
+};
+
+function turnOnRelay1() {
+	relayData.state1 = 1;
+}
+
+function turnOffRelay1() {
+	relayData.state1 = 0;
+}
+
+function turnOnRelay2() {
+	relayData.state2 = 1;
+}
+
+function turnOffRelay2() {
+	relayData.state2 = 0;
+}
+
+function setRelayVoltages() {
+	relayData.voltage1 = 3 + parseFloat(getRandomInt(2));
+	relayData.voltage2 = 3 + parseFloat(getRandomInt(2));
+}
+
+function updateData() {
+	document.getElementById("state1").innerHTML = relayData.state1;
+	document.getElementById("state2").innerHTML = relayData.state2;
+	
+	if (relayData.state1)
+		document.getElementById("voltage1").innerHTML = relayData.voltage1;
+		
+	if (relayData.state2)
+		document.getElementById("voltage2").innerHTML = relayData.voltage2;
+}
+
+setInterval(setRelayVoltages, 100);
+setInterval(updateData, 100);
+
+</script>
+
+
+</html>

@@ -6,6 +6,7 @@
 #include <openssl/ssl.h>
 #include <fstream>
 
+
 void Server::createSocket(const char* address, int port)
 {
     struct sockaddr_in addr;
@@ -72,17 +73,101 @@ void Server::handleRequest(const HttpRequest& request)
     {
         responseBuilder
             .reset()
-            .setStatusCode(HttpStatusCode::BAD_REQUEST);
+            .setStatusCode(HttpStatusCode::NOT_FOUND);
 
         return;
     }
 
+    if (!subhandleRequestAsHardwareWrite(request))
+        if(!subhandleRequestAsHardwareRead(request))
+            if(!subhandleRequestAsFile(request))
+                responseBuilder
+                    .reset()
+                    .setStatusCode(HttpStatusCode::BAD_REQUEST);
+}
+
+bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
+{
+    if (request.getRequestType() != HttpRequestType::PUT)
+        return false;
+
+    if (request.getPathToResource() != "/relay")
+        return false;
+
+    const HttpImmutableMap& bodyParams = request.getBodyParametersMap();
+
+    if (!bodyParams.hasKey("index") ||
+        !bodyParams.hasKey("on"))
+    {
+            responseBuilder
+                .reset()
+                .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+            return true;
+    }
+
+    const ValueWrapper& index = bodyParams.getValue("index");
+    const ValueWrapper& on = bodyParams.getValue("on");
+
+    if (!index.isInt() || !on.isInt())
+    {
+        responseBuilder
+                .reset()
+                .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+        return true;
+    }
+
+    int indexInt = index.getAsInt();
+    int onInt = on.getAsInt();
+
+    if (onInt != 0)
+        relayController.enableRelayByIndex(indexInt);
+    else
+        relayController.disableRelayByIndex(onInt);
+
+    responseBuilder
+        .reset()
+        .setStatusCode(HttpStatusCode::OK);
+
+    return true;
+}
+
+bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
+{
+    if (request.getRequestType() != HttpRequestType::GET)
+        return false;
+
+    const std::string& pathToResource = request.getPathToResource();
+
+    if (pathToResource != "/state")
+        return false;
+
+    static HttpMutableMap states;
+
+    states.setValue("voltage1", ValueWrapper(std::to_string(voltageReader.getVoltage(0))));
+    states.setValue("voltage2", ValueWrapper(std::to_string(voltageReader.getVoltage(1))));
+    states.setValue("voltage3", ValueWrapper(std::to_string(voltageReader.getVoltage(2))));
+    states.setValue("voltage4", ValueWrapper(std::to_string(voltageReader.getVoltage(3))));
+
+    states.setValue("relay1", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(0))));
+    states.setValue("relay2", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(1))));
+    states.setValue("relay3", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(2))));
+    states.setValue("relay4", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(3))));
+
+    responseBuilder
+        .reset()
+        .setStatusCode(HttpStatusCode::OK)
+        .setJsonMap(&states);
+
+    return true;
+}
+
+bool Server::subhandleRequestAsFile(const HttpRequest& request)
+{
     std::string pathToResource = request.getPathToResource();
 
-    if (pathToResource[0] != '/')
-        pathToResource.insert(0, "resources/");
-    else
-        pathToResource.insert(0, "resources");
+    pathToResource.insert(0, "resources");
 
     std::ifstream file(pathToResource);
 
@@ -102,19 +187,17 @@ void Server::handleRequest(const HttpRequest& request)
 
         responseBuilder.reset();
 
-        if (request.getResourceExtension() == "html")
-            responseBuilder.setContentType(HTML);
+        if (extension == "html" || extension == "HTML")
+            responseBuilder.setContentType(HttpContentType::HTML);
 
         responseBuilder
             .setStatusCode(HttpStatusCode::OK)
             .setRawBody(fileContents);
+
+        return true;
     } 
-    else 
-    {
-        responseBuilder
-            .reset()
-            .setStatusCode(HttpStatusCode::NOT_FOUND);
-    }
+
+    return false;
 }
 
 void Server::start()

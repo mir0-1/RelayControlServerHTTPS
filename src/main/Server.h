@@ -2,6 +2,8 @@
 #include <openssl/ssl.h>
 #include "../../../HttpLibrary/src/HttpRequest.h"
 #include "../../../HttpLibrary/src/HttpResponseBuilder.h"
+#include "../../../VoltageLibrary/VoltageReader.h"
+#include "../../../RelayLibrary/RelayController.h"
 
 class Server
 {
@@ -10,11 +12,16 @@ class Server
 		int sock;
 		SSL_CTX* sslContext;
 		HttpResponseBuilder responseBuilder;
+		VoltageReader voltageReader;
+		RelayController relayController;
 
 		void createSocket(const char* address, int port);
 		void createContext();
 		void configureContext();
 		void handleRequest(const HttpRequest& request);
+		bool subhandleRequestAsFile(const HttpRequest& request);
+		bool subhandleRequestAsHardwareRead(const HttpRequest& request);
+		bool subhandleRequestAsHardwareWrite(const HttpRequest& request);
 
 	public:
 		void start();
