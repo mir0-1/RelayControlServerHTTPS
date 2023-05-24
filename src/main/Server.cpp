@@ -202,7 +202,8 @@ bool Server::subhandleRequestAsFile(const HttpRequest& request)
 
 void Server::start()
 {
-    char buffer[4096];
+    const int MAX_BUFFER_LENGTH = 10240;
+    char buffer[MAX_BUFFER_LENGTH+1];
 
     while(true)
     {
@@ -225,7 +226,7 @@ void Server::start()
         else 
         {
             int bytesRead;
-            if ((bytesRead = SSL_read(ssl, buffer, 4096)) > 0)
+            if ((bytesRead = SSL_read(ssl, buffer, MAX_BUFFER_LENGTH)) > 0)
             {
                 buffer[bytesRead] = '\0';
                 HttpRequest request(buffer);
