@@ -101,7 +101,7 @@ void Server::handleRequest(const HttpRequest& request)
     {
         responseBuilder
             .reset()
-            .setStatusCode(HttpStatusCode::NOT_FOUND);
+            .setStatusCode(request.isValid() ? HttpStatusCode::NOT_FOUND : HttpStatusCode::BAD_REQUEST);
 
         return;
     }
@@ -298,6 +298,8 @@ Server::Server(std::ostream& logger)
 
     configMap.parseKeyValuePairs((char*)rawConfig.c_str(), '\n', '\0');
 
+    wcm = new WirelessConnectionManager(rawConfig.getValue("ssid").getAsString(), rawConfig.getValue("password").getAsString());
+
     createSocket();
     start();
 }
@@ -306,4 +308,6 @@ Server::~Server()
 {
 	close(sock);
     SSL_CTX_free(sslContext);
+
+    delete WirelessConnectionManager;
 }

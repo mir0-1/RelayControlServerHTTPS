@@ -5,6 +5,7 @@
 #include "../../../HttpLibrary/src/HttpResponseBuilder.h"
 #include "../../../VoltageLibrary/VoltageReader.h"
 #include "../../../RelayLibrary/RelayController.h"
+#include "../../../WirelessLibrary/WirelessConnectionManager.h"
 
 class Server
 {
@@ -17,6 +18,7 @@ class Server
 		HttpResponseBuilder responseBuilder;
 		VoltageReader voltageReader;
 		RelayController relayController;
+		WirelessConnectionManager* wirelessConnectionManager;
 
 		bool readFile(const std::string& path, std::string& out);
 		void createSocket();
