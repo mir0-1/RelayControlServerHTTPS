@@ -177,6 +177,8 @@ bool Server::subhandleRequestAsFile(const HttpRequest& request)
         std::streampos fileSize = file.tellg();
         file.seekg(0, std::ios::beg);
 
+        if (fileSize <= 0)
+            return false;
         std::string fileContents;
         fileContents.resize(fileSize);
 
