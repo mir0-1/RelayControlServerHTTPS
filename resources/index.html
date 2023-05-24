@@ -47,6 +47,13 @@
   </tr>
 </table>
 
+<table class="tbl mini">
+	  <td><h2 id="voltage1">0 V</h2></td>
+    <td><h2 id="voltage2">0 V</h2></td>
+    <td><h2 id="voltage3">0 V</h2></td>
+    <td><h2 id="voltage4">0 V</h2></td>
+</table>
+
 
 </body>
 <script>
@@ -55,6 +62,11 @@ var relay1 = document.getElementById("state1");
 var relay2 = document.getElementById("state2");
 var relay3 = document.getElementById("state3");
 var relay4 = document.getElementById("state4");
+
+var voltage1 = document.getElementById("state1");
+var voltage2 = document.getElementById("state2");
+var voltage3 = document.getElementById("state3");
+var voltage4 = document.getElementById("state4");
 
 function setRelay(index, on)
 {
@@ -99,6 +111,11 @@ function getRelayAndVoltageData()
 	    		relay2.innerHTML = (json.relay2 === "1") ? "ВКЛ." : "ИЗКЛ.";
 	    		relay3.innerHTML = (json.relay3 === "1") ? "ВКЛ." : "ИЗКЛ.";
 	    		relay4.innerHTML = (json.relay4 === "1") ? "ВКЛ." : "ИЗКЛ.";
+
+	    		voltage1.innerHTML = json.voltage1;
+	    		voltage2.innerHTML = json.voltage2;
+	    		voltage3.innerHTML = json.voltage3;
+	    		voltage4.innerHTML = json.voltage4;
 	    }
 	    else
 	    {

@@ -46,3 +46,13 @@ td,th,tr {
 body {
 	background-color: lightgray;
 }
+
+.mini {
+  margin: auto;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.mini td {
+  width: 120px;
+}
