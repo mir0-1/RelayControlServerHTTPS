@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Configuration</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+  <body>
+    <h1>Configuration</h1>
+    <div class="config-div">
+      <p>SSID<input class="config-input" type="text" id="SSID" placeholder="SSID" value="%SSID%"></p>
+      <p>  Password  <input class="config-input" type="text" id="Password" placeholder="Password" value="%Password%"></p>
+      </hr>
+      <p>  http username<input class="config-input" type="text" id="http_username" placeholder="http_username" value="%http_username%"></p>
+      <p>  http password  <input class="config-input" type="text" id="http_password" placeholder="http_password" value="%http_password%"></p>
+      <!-- Button to send data -->
+      <button  onclick="sendJSON()">Save</button>
+    </div>
+    <!-- For printing result from server -->
+    <p class="result" style="color:green"></p>
+    <!-- </p> -->
+  </body>
+  <script>
+    function sendJSON()
+    {
+      let result = document.querySelector('.result');
+      let ssid = document.querySelector('#SSID');
+      let password = document.querySelector('#Password');
+      let http_username = document.querySelector('#http_username');
+      let http_password = document.querySelector('#http_password');
+      // Creating a XHR object
+      let xhr = new XMLHttpRequest();
+      let url = "/config";
+    
+      // open a connection
+      xhr.open("POST", url, true);
+    
+      // Set the request header i.e. which type of content you are sending
+      xhr.setRequestHeader("Content-Type", "application/json");
+    
+      // Create a state change callback
+      xhr.onreadystatechange = function () 
+      {
+          if (xhr.readyState === 4 && xhr.status === 200) 
+          {
+    
+              // Print received data from server
+              result.innerHTML = this.responseText;
+    
+          }
+      };
+    
+      // Converting JSON data to string
+      var data = JSON.stringify({ "ssid": ssid.value, "password": password.value, "http_username": http_username.value, "http_password": http_password.value,  });
+    
+      // Sending data with the request
+      xhr.send(data);
+    }
+    
+  </script>
+</html>

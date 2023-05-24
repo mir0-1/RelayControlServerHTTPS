@@ -4,8 +4,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 #include <fstream>
-
 
 void Server::createSocket(const char* address, int port)
 {
@@ -44,7 +44,8 @@ void Server::createContext()
     sslContext = SSL_CTX_new(method);
     if (!sslContext) 
     {
-        logger << "SSL Context Init Failure" << std::endl;
+        logger << "SSL Context Init Failure" << std::endl
+        << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -53,17 +54,41 @@ void Server::configureContext()
 {
     if (SSL_CTX_use_certificate_file(sslContext, "cert/cert.pem", SSL_FILETYPE_PEM) <= 0)
     {
-        logger << "Could not use cert file" << std::endl;
+        logger << "Could not use cert file" << std::endl
+        << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
         exit(EXIT_FAILURE);
     }
 
     if (SSL_CTX_use_PrivateKey_file(sslContext, "cert/key.pem", SSL_FILETYPE_PEM) <= 0 )
     {
-        logger << "Could not use key file" << std::endl;
+        logger << "Could not use key file" << std::endl <<
+        ERR_error_string(ERR_get_error(), nullptr) << std::endl;
         exit(EXIT_FAILURE);
     }
 
     SSL_CTX_set_verify(sslContext, SSL_VERIFY_NONE, NULL);
+}
+
+bool Server::readFile(const std::string& path, std::string& out)
+{
+    std::ifstream file(path);
+
+    if (!file.is_open())
+        return false;
+
+    file.seekg(0, std::ios::end);
+    std::streampos fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    if (fileSize <= 0)
+        return false;
+
+    out.resize(fileSize);
+
+    file.read(&out[0], fileSize);
+    file.close();
+
+    return true;
 }
 
 void Server::handleRequest(const HttpRequest& request)
@@ -78,12 +103,22 @@ void Server::handleRequest(const HttpRequest& request)
         return;
     }
 
-    if (!subhandleRequestAsHardwareWrite(request))
-        if(!subhandleRequestAsHardwareRead(request))
-            if(!subhandleRequestAsFile(request))
-                responseBuilder
-                    .reset()
-                    .setStatusCode(HttpStatusCode::BAD_REQUEST);
+    if (request.getPathToResource() == "/")
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::OK)
+
+        return;
+    }
+
+    if (subhandleRequestAsHardwareWrite(request))
+        return;
+
+    if (subhandleRequestAsHardwareRead(request))
+        return;
+    
+    subhandleRequestAsFile(request);
 }
 
 bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
@@ -158,6 +193,7 @@ bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
     responseBuilder
         .reset()
         .setStatusCode(HttpStatusCode::OK)
+        .setContentType(HttpContentType::JSON)
         .setJsonMap(&states);
 
     return true;
@@ -168,38 +204,25 @@ bool Server::subhandleRequestAsFile(const HttpRequest& request)
     std::string pathToResource = request.getPathToResource();
 
     pathToResource.insert(0, "resources");
+    responseBuilder.reset();
 
-    std::ifstream file(pathToResource);
-
-    if (file.is_open())
+    std::string fileContents;
+    if (!readFile(pathToResource, fileContents))
     {
-        file.seekg(0, std::ios::end);
-        std::streampos fileSize = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-        if (fileSize <= 0)
-            return false;
-        std::string fileContents;
-        fileContents.resize(fileSize);
-
-        file.read(&fileContents[0], fileSize);
-        file.close();
-
-        const std::string& extension = request.getResourceExtension();
-
-        responseBuilder.reset();
-
-        if (extension == "html" || extension == "HTML")
-            responseBuilder.setContentType(HttpContentType::HTML);
-
         responseBuilder
-            .setStatusCode(HttpStatusCode::OK)
-            .setRawBody(fileContents);
+            .setStatusCode(HttpStatusCode::NOT_FOUND);
+    }
 
-        return true;
-    } 
+    const std::string& extension = request.getResourceExtension();
 
-    return false;
+    if (extension == "html" || extension == "HTML")
+        responseBuilder.setContentType(HttpContentType::HTML);
+
+    responseBuilder
+        .setStatusCode(HttpStatusCode::OK)
+        .setRawBody(fileContents);
+
+    return true;
 }
 
 void Server::start()
@@ -224,7 +247,10 @@ void Server::start()
         SSL_set_fd(ssl, client);
 
         if (SSL_accept(ssl) <= 0) 
-            logger << "SSL accept failed" << std::endl;
+        {
+            logger << "SSL accept failed" << std::endl 
+            << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+        }
         else 
         {
             int bytesRead;
@@ -255,7 +281,6 @@ Server::Server(const char* ipAddress, int port, std::ostream& logger)
     configureContext();
 
     createSocket(ipAddress, port);
-    responseBuilder.setProtocolVersion(1.1);
 }
 
 Server::~Server()
