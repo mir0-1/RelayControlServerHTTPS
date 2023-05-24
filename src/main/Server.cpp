@@ -7,13 +7,16 @@
 #include <openssl/err.h>
 #include <fstream>
 
-void Server::createSocket(const char* address, int port)
+void Server::createSocket()
 {
     struct sockaddr_in addr;
 
+    int port = configMap.getValue("port").getAsInt();
+    const std::string& address = configMap.getValue("ip").getAsString();
+
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = inet_addr(address);
+    addr.sin_addr.s_addr = inet_addr(address.c_str());
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0)
@@ -282,7 +285,7 @@ void Server::start()
     }
 }
 
-Server::Server(const char* ipAddress, int port, std::ostream& logger)
+Server::Server(std::ostream& logger)
 	:	logger(logger)
 {
     signal(SIGPIPE, SIG_IGN);
@@ -290,7 +293,12 @@ Server::Server(const char* ipAddress, int port, std::ostream& logger)
     createContext();
     configureContext();
 
-    createSocket(ipAddress, port);
+    std::string rawConfig;
+    readFile("config", rawConfig);
+
+    configMap.parseKeyValuePairs(rawConfig.c_str(), '\n', '\0');
+
+    createSocket();
 }
 
 Server::~Server()

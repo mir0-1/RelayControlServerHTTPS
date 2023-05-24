@@ -19,7 +19,7 @@ class Server
 		RelayController relayController;
 
 		bool readFile(const std::string& path, std::string& out);
-		void createSocket(const char* address, int port);
+		void createSocket();
 		void createContext();
 		void configureContext();
 		void handleRequest(const HttpRequest& request);
@@ -30,6 +30,6 @@ class Server
 	public:
 		void start();
 
-		Server(const char* ipAddress, int port, std::ostream& logger);
+		Server(const std::ostream& logger);
 		~Server();
 };
