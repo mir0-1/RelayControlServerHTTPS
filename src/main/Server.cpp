@@ -124,7 +124,7 @@ bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
     if (onInt != 0)
         relayController.enableRelayByIndex(indexInt);
     else
-        relayController.disableRelayByIndex(onInt);
+        relayController.disableRelayByIndex(indexInt);
 
     responseBuilder
         .reset()
