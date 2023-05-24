@@ -68,6 +68,11 @@ var voltage2 = document.getElementById("voltage2");
 var voltage3 = document.getElementById("voltage3");
 var voltage4 = document.getElementById("voltage4");
 
+function roundFloat(num)
+{
+	return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
 function setRelay(index, on)
 {
 	let xhr = new XMLHttpRequest();
@@ -112,10 +117,10 @@ function getRelayAndVoltageData()
 	    		relay3.innerHTML = (json.relay3 === "1") ? "ВКЛ." : "ИЗКЛ.";
 	    		relay4.innerHTML = (json.relay4 === "1") ? "ВКЛ." : "ИЗКЛ.";
 
-	    		voltage1.innerHTML = json.voltage1 + " V";
-	    		voltage2.innerHTML = json.voltage2 + " V";
-	    		voltage3.innerHTML = json.voltage3 + " V";
-	    		voltage4.innerHTML = json.voltage4 + " V";
+	    		voltage1.innerHTML = roundFloat(json.voltage1) + " V";
+	    		voltage2.innerHTML = roundFloat(json.voltage2) + " V";
+	    		voltage3.innerHTML = roundFloat(json.voltage3) + " V";
+	    		voltage4.innerHTML = roundFloat(json.voltage4) + " V";
 	    }
 	    else
 	    {
