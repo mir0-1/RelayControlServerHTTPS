@@ -150,10 +150,10 @@ bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
     states.setValue("voltage3", ValueWrapper(std::to_string(voltageReader.getVoltage(2))));
     states.setValue("voltage4", ValueWrapper(std::to_string(voltageReader.getVoltage(3))));
 
-    states.setValue("relay1", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(0))));
-    states.setValue("relay2", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(1))));
-    states.setValue("relay3", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(2))));
-    states.setValue("relay4", ValueWrapper(std::to_string(relayController.getLastKnownRelayStateByIndex(3))));
+    states.setValue("relay1", ValueWrapper(std::to_string((int)relayController.getLastKnownRelayStateByIndex(0))));
+    states.setValue("relay2", ValueWrapper(std::to_string((int)relayController.getLastKnownRelayStateByIndex(1))));
+    states.setValue("relay3", ValueWrapper(std::to_string((int)relayController.getLastKnownRelayStateByIndex(2))));
+    states.setValue("relay4", ValueWrapper(std::to_string((int)relayController.getLastKnownRelayStateByIndex(3))));
 
     responseBuilder
         .reset()
