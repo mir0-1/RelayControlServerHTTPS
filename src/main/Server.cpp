@@ -6,6 +6,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <fstream>
+#include <ctime>
+#include <cstdlib>
 
 void Server::createSocket()
 {
@@ -97,7 +99,7 @@ bool Server::readFile(const std::string& path, std::string& out)
 void Server::handleRequest(const HttpRequest& request)
 {
     HttpRequestType requestType = request.getRequestType();
-    if (!request.isValid() || (requestType != HttpRequestType::GET && requestType != HttpRequestType::PUT))
+    if (!request.isValid() || (requestType != HttpRequestType::GET && requestType != HttpRequestType::PUT && requestType != HttpRequestType::POST))
     {
         responseBuilder
             .reset()
@@ -130,16 +132,19 @@ void Server::handleRequest(const HttpRequest& request)
 
     if (subhandleRequestAsHardwareRead(request))
         return;
+
+    if (subhandleRequestAsLogin(request))
+        return;
     
     subhandleRequestAsFile(request);
 }
 
 bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
 {
-    if (request.getRequestType() != HttpRequestType::PUT)
+    if (request.getPathToResource() != "/relay")
         return false;
 
-    if (request.getPathToResource() != "/relay")
+    if (request.getRequestType() != HttpRequestType::PUT)
         return false;
 
     const HttpImmutableMap& bodyParams = request.getBodyParametersMap();
@@ -183,13 +188,19 @@ bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
 
 bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
 {
-    if (request.getRequestType() != HttpRequestType::GET)
-        return false;
-
-    const std::string& pathToResource = request.getPathToResource();
-
     if (pathToResource != "/state")
         return false;
+
+    if (request.getRequestType() != HttpRequestType::GET)
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+        return true;
+    }
+
+    const std::string& pathToResource = request.getPathToResource();
 
     static HttpMutableMap states;
 
@@ -236,6 +247,73 @@ bool Server::subhandleRequestAsFile(const HttpRequest& request)
         .setRawBody(fileContents);
 
     return true;
+}
+
+std::string Server::generateRandomSessionID() 
+{
+    const std::string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    const int length = 16;
+    std::string randomString;
+    for (int i = 0; i < length; ++i) {
+        int randomIndex = rand() % characters.length();
+        randomString += characters[randomIndex];
+    }
+
+    return randomString;
+}
+
+bool Server::subhandleRequestAsLogin(const HttpRequest& request)
+{
+    if (request.getRequestType() != HttpRequestType::POST)
+        return false;
+
+    if (pathToResource != "/login")
+        return false;
+
+    const HttpImmutableMap& bodyParams = request.getBodyParametersMap();
+
+    if (!bodyParams.hasKey("username") || !bodyParams.hasKey("password"))
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+        return true;
+    }
+
+    if (!request.getCookiesMap().hasKey("SESSIONID"))
+    {
+
+        std::string newSessionId;
+        do
+        {
+            newSessionId = generateRandomSessionID();
+        } while (sessions.find(newSessionId));
+
+        sessions.push_back(newSessionId);
+
+        static HttpMutableMap locationHeader;
+        static bool once;
+
+        if (!once)
+        {
+            locationHeader.setValue("Location", ValueWrapper("/index.html"));
+            once = true;
+        }
+    }
+
+    HttpMutableMap cookieMap;
+
+    cookieMap.setValue("SESSIONID", ValueWrapper(newSessionId));
+
+    responseBuilder
+        .reset()
+        .responseBuilder(HttpStatusCode::FOUND)
+        .setHeaderMap(locationHeader)
+        .setCookieMap(cookieMap);
+
+
 }
 
 void Server::start()
@@ -288,6 +366,7 @@ void Server::start()
 Server::Server(std::ostream& logger)
 	:	logger(logger)
 {
+    srand(time(NULL));
     createContext();
     configureContext();
 

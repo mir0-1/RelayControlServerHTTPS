@@ -20,11 +20,13 @@ class Server
 		RelayController relayController;
 		WirelessConnectionManager* wirelessConnectionManager;
 
+		std::string generateRandomSessionID();
 		bool readFile(const std::string& path, std::string& out);
 		void createSocket();
 		void createContext();
 		void configureContext();
 		void handleRequest(const HttpRequest& request);
+		bool subhandleRequestAsLogin(const HttpRequest& request);
 		bool subhandleRequestAsHardwareRead(const HttpRequest& request);
 		bool subhandleRequestAsHardwareWrite(const HttpRequest& request);
 		bool subhandleRequestAsFile(const HttpRequest& request);
