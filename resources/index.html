@@ -112,10 +112,10 @@ function getRelayAndVoltageData()
 	    		relay3.innerHTML = (json.relay3 === "1") ? "ВКЛ." : "ИЗКЛ.";
 	    		relay4.innerHTML = (json.relay4 === "1") ? "ВКЛ." : "ИЗКЛ.";
 
-	    		voltage1.innerHTML = "" + json.voltage1.toFixed(2) + " V";
-	    		voltage2.innerHTML = "" + json.voltage2.toFixed(2) + " V";
-	    		voltage3.innerHTML = "" + json.voltage3.toFixed(2) + " V";
-	    		voltage4.innerHTML = "" + json.voltage4.toFixed(2) + " V";
+	    		voltage1.innerHTML = json.voltage1.toFixed(3) + " V";
+	    		voltage2.innerHTML = json.voltage2.toFixed(3) + " V";
+	    		voltage3.innerHTML = json.voltage3.toFixed(3) + " V";
+	    		voltage4.innerHTML = json.voltage4.toFixed(3) + " V";
 	    }
 	    else
 	    {
