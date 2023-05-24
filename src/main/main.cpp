@@ -4,7 +4,7 @@ int main(int argc, char *argv[])
 {
 	if (argc > 1)
 	{
-		Server server(argv[0], 80, std::cout);
+		Server server(argv[1], 80, std::cout);
 		server.start();
 	}
 	else

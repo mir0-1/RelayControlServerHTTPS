@@ -1,7 +1,7 @@
 all: remote
 
 OUTPUT_NAME := server.out
-COMPILER = g++ -std=c++11
+COMPILER = g++ -std=c++11 -g
 CONFIG = -L/usr/lib/openssl -lssl -lcrypto
 BUILD = $(COMPILER) $^ $(CONFIG) -o $(OUTPUT_NAME)
 
