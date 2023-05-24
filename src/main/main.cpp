@@ -1,9 +1,17 @@
 #include "Server.h"
 
-int main()
+int main(int argc, char *argv[])
 {
-	Server server("192.168.0.102", 80, std::cout);
-	server.start();
+	if (argc > 1)
+	{
+		Server server(argv[0], 80, std::cout);
+		server.start();
+	}
+	else
+	{
+		Server server("192.168.0.103", 80, std::cout);
+		server.start();
+	}
 
 	return 0;
 }
