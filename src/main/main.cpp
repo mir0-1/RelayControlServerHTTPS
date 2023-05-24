@@ -2,9 +2,9 @@
 
 int main(int argc, char *argv[])
 {
-	if (argc > 1)
+	if (argc >= 3)
 	{
-		Server server(argv[1], 80, std::cout);
+		Server server(argv[1], std::atoi(argv[2]), std::cout);
 		server.start();
 	}
 	else
