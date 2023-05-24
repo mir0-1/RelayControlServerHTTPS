@@ -299,6 +299,7 @@ Server::Server(std::ostream& logger)
     configMap.parseKeyValuePairs((char*)rawConfig.c_str(), '\n', '\0');
 
     createSocket();
+    start();
 }
 
 Server::~Server()
