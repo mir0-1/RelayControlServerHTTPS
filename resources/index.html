@@ -112,10 +112,10 @@ function getRelayAndVoltageData()
 	    		relay3.innerHTML = (json.relay3 === "1") ? "ВКЛ." : "ИЗКЛ.";
 	    		relay4.innerHTML = (json.relay4 === "1") ? "ВКЛ." : "ИЗКЛ.";
 
-	    		voltage1.innerHTML = json.voltage1;
-	    		voltage2.innerHTML = json.voltage2;
-	    		voltage3.innerHTML = json.voltage3;
-	    		voltage4.innerHTML = json.voltage4;
+	    		voltage1.innerHTML = json.voltage1 + " V";
+	    		voltage2.innerHTML = json.voltage2 + " V";
+	    		voltage3.innerHTML = json.voltage3 + " V";
+	    		voltage4.innerHTML = json.voltage4 + " V";
 	    }
 	    else
 	    {
