@@ -105,9 +105,19 @@ void Server::handleRequest(const HttpRequest& request)
 
     if (request.getPathToResource() == "/")
     {
+        static HttpMutableMap locationHeader;
+        static bool once;
+
+        if (!once)
+        {
+            locationHeader.setValue("Location", ValueWrapper("/index.html"));
+            once = true;
+        }
+
         responseBuilder
             .reset()
-            .setStatusCode(HttpStatusCode::OK)
+            .setStatusCode(HttpStatusCode::FOUND)
+            .setHeaderMap(&locationHeader);
 
         return;
     }

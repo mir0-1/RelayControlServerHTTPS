@@ -18,7 +18,7 @@ class Server
 		VoltageReader voltageReader;
 		RelayController relayController;
 
-		bool readFile(std::string& out);
+		bool readFile(const std::string& path, std::string& out);
 		void createSocket(const char* address, int port);
 		void createContext();
 		void configureContext();
