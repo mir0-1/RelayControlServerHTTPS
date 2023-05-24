@@ -8,6 +8,7 @@
 #include <fstream>
 #include <ctime>
 #include <cstdlib>
+#include <algorithm>
 
 void Server::createSocket()
 {
@@ -188,6 +189,8 @@ bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
 
 bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
 {
+    const std::string& pathToResource = request.getPathToResource();
+
     if (pathToResource != "/state")
         return false;
 
@@ -199,8 +202,6 @@ bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
 
         return true;
     }
-
-    const std::string& pathToResource = request.getPathToResource();
 
     static HttpMutableMap states;
 
@@ -265,9 +266,11 @@ std::string Server::generateRandomSessionID()
 
 bool Server::subhandleRequestAsLogin(const HttpRequest& request)
 {
+
     if (request.getRequestType() != HttpRequestType::POST)
         return false;
 
+    std::string pathToResource = request.getPathToResource();
     if (pathToResource != "/login")
         return false;
 
@@ -282,19 +285,35 @@ bool Server::subhandleRequestAsLogin(const HttpRequest& request)
         return true;
     }
 
-    if (!request.getCookiesMap().hasKey("SESSIONID"))
-    {
+    const std::string& username = bodyParams.getValue("username").getAsString();
+    const std::string& password = bodyParams.getValue("password").getAsString();
 
-        std::string newSessionId;
+    logger << "Check for username and password" << std::endl;
+    if (username != configMap.getValue("login_user").getAsString() ||
+        password != configMap.getValue("login_password").getAsString() )
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::UNAUTHORIZED);
+
+        return true;
+    }
+
+    logger << "User and pass ok" << std::endl;
+    std::string newSessionId;
+    const HttpImmutableMap& cookies = request.getCookiesMap();
+    const std::string& sessionId = cookies.getValue("SESSIONID").getAsString();
+
+    static HttpMutableMap locationHeader;
+    static bool once;
+    if (!cookies.hasKey("SESSIONID") || std::find(sessions.begin(), sessions.end(), sessionId) == sessions.end())
+    {
         do
         {
             newSessionId = generateRandomSessionID();
-        } while (sessions.find(newSessionId));
+        } while (std::find(sessions.begin(), sessions.end(), sessionId) != sessions.end());
 
         sessions.push_back(newSessionId);
-
-        static HttpMutableMap locationHeader;
-        static bool once;
 
         if (!once)
         {
@@ -303,17 +322,17 @@ bool Server::subhandleRequestAsLogin(const HttpRequest& request)
         }
     }
 
-    HttpMutableMap cookieMap;
+    static HttpMutableMap cookieMap;
 
     cookieMap.setValue("SESSIONID", ValueWrapper(newSessionId));
 
     responseBuilder
         .reset()
-        .responseBuilder(HttpStatusCode::FOUND)
-        .setHeaderMap(locationHeader)
-        .setCookieMap(cookieMap);
+        .setStatusCode(HttpStatusCode::FOUND)
+        .setHeaderMap(&locationHeader)
+        .setCookieMap(&cookieMap);
 
-
+    return true;
 }
 
 void Server::start()
