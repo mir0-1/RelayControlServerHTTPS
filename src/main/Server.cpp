@@ -150,10 +150,10 @@ bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
     states.setValue("voltage3", ValueWrapper(std::to_string(voltageReader.getVoltage(2))));
     states.setValue("voltage4", ValueWrapper(std::to_string(voltageReader.getVoltage(3))));
 
-    std::cout << "DEBUG[0]=" << (int)relayController.getLastKnownRelayStateByIndex(0);
-    std::cout << "DEBUG[1]=" << (int)relayController.getLastKnownRelayStateByIndex(1);
-    std::cout << "DEBUG[2]=" << (int)relayController.getLastKnownRelayStateByIndex(2);
-    std::cout << "DEBUG[3]=" << (int)relayController.getLastKnownRelayStateByIndex(3);
+    std::cout << "DEBUG[0]=" << (int)relayController.getLastKnownRelayStateByIndex(0) << std::endl;
+    std::cout << "DEBUG[1]=" << (int)relayController.getLastKnownRelayStateByIndex(1) << std::endl;
+    std::cout << "DEBUG[2]=" << (int)relayController.getLastKnownRelayStateByIndex(2) << std::endl;
+    std::cout << "DEBUG[3]=" << (int)relayController.getLastKnownRelayStateByIndex(3) << std::endl;
 
     states.setValue("relay1", ValueWrapper(std::to_string((int)relayController.getLastKnownRelayStateByIndex(0))));
     states.setValue("relay2", ValueWrapper(std::to_string((int)relayController.getLastKnownRelayStateByIndex(1))));
