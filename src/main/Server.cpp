@@ -288,8 +288,6 @@ void Server::start()
 Server::Server(std::ostream& logger)
 	:	logger(logger)
 {
-    signal(SIGPIPE, SIG_IGN);
-
     createContext();
     configureContext();
 
@@ -298,7 +296,7 @@ Server::Server(std::ostream& logger)
 
     configMap.parseKeyValuePairs((char*)rawConfig.c_str(), '\n', '\0');
 
-    wcm = new WirelessConnectionManager(rawConfig.getValue("ssid").getAsString(), rawConfig.getValue("password").getAsString());
+    wirelessConnectionManager = new WirelessConnectionManager(configMap.getValue("ssid").getAsString(), configMap.getValue("password").getAsString());
 
     createSocket();
     start();
@@ -309,5 +307,5 @@ Server::~Server()
 	close(sock);
     SSL_CTX_free(sslContext);
 
-    delete WirelessConnectionManager;
+    delete wirelessConnectionManager;
 }
