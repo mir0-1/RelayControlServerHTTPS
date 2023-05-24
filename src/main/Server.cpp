@@ -296,7 +296,7 @@ Server::Server(std::ostream& logger)
     std::string rawConfig;
     readFile("config", rawConfig);
 
-    configMap.parseKeyValuePairs(rawConfig.c_str(), '\n', '\0');
+    configMap.parseKeyValuePairs((char*)rawConfig.c_str(), '\n', '\0');
 
     createSocket();
 }

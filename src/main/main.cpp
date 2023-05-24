@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-	Server server(&std::cout);
+	Server server(std::cout);
 
 	return 0;
 }

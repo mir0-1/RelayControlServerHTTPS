@@ -30,6 +30,6 @@ class Server
 	public:
 		void start();
 
-		Server(const std::ostream& logger);
+		Server(std::ostream& logger);
 		~Server();
 };
