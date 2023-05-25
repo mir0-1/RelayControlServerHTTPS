@@ -21,6 +21,7 @@ class Server
 		WirelessConnectionManager* wirelessConnectionManager;
 
 		std::string generateRandomSessionID();
+		const std::string& getSessionID(const HttpRequest& request);
 		bool readFile(const std::string& path, std::string& out);
 		void createSocket();
 		void createContext();
@@ -29,6 +30,7 @@ class Server
 		bool subhandleRequestAsLogin(const HttpRequest& request);
 		bool subhandleRequestAsHardwareRead(const HttpRequest& request);
 		bool subhandleRequestAsHardwareWrite(const HttpRequest& request);
+		bool subhandleRequestAsConfig(const HttpRequest& request);
 		bool subhandleRequestAsFile(const HttpRequest& request);
 
 	public:

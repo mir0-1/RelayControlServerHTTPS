@@ -100,30 +100,11 @@ bool Server::readFile(const std::string& path, std::string& out)
 void Server::handleRequest(const HttpRequest& request)
 {
     HttpRequestType requestType = request.getRequestType();
-    if (!request.isValid() || (requestType != HttpRequestType::GET && requestType != HttpRequestType::PUT && requestType != HttpRequestType::POST))
+    if (!request.isValid())
     {
         responseBuilder
             .reset()
-            .setStatusCode(request.isValid() ? HttpStatusCode::NOT_FOUND : HttpStatusCode::BAD_REQUEST);
-
-        return;
-    }
-
-    if (request.getPathToResource() == "/")
-    {
-        static HttpMutableMap locationHeader;
-        static bool once;
-
-        if (!once)
-        {
-            locationHeader.setValue("Location", ValueWrapper("/index.html"));
-            once = true;
-        }
-
-        responseBuilder
-            .reset()
-            .setStatusCode(HttpStatusCode::FOUND)
-            .setHeaderMap(&locationHeader);
+            .setStatusCode(HttpStatusCode::BAD_REQUEST);
 
         return;
     }
@@ -136,6 +117,9 @@ void Server::handleRequest(const HttpRequest& request)
 
     if (subhandleRequestAsLogin(request))
         return;
+
+    if (subhandleRequestAsConfig(request))
+        return;
     
     subhandleRequestAsFile(request);
 }
@@ -145,12 +129,10 @@ bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
     if (request.getPathToResource() != "/relay")
         return false;
 
-    if (request.getRequestType() != HttpRequestType::PUT)
-        return false;
-
     const HttpImmutableMap& bodyParams = request.getBodyParametersMap();
 
-    if (!bodyParams.hasKey("index") ||
+    if (request.getRequestType() != HttpRequestType::PUT ||
+        !bodyParams.hasKey("index") ||
         !bodyParams.hasKey("on"))
     {
             responseBuilder
@@ -168,6 +150,15 @@ bool Server::subhandleRequestAsHardwareWrite(const HttpRequest& request)
         responseBuilder
                 .reset()
                 .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+        return true;
+    }
+
+    if (getSessionID(request).empty())
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::UNAUTHORIZED);
 
         return true;
     }
@@ -203,6 +194,15 @@ bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
         return true;
     }
 
+    if (getSessionID(request).empty())
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::UNAUTHORIZED);
+
+        return true;
+    }
+
     static HttpMutableMap states;
 
     states.setValue("voltage1", ValueWrapper(std::to_string(voltageReader.getVoltage(0))));
@@ -226,19 +226,58 @@ bool Server::subhandleRequestAsHardwareRead(const HttpRequest& request)
 
 bool Server::subhandleRequestAsFile(const HttpRequest& request)
 {
+    if (request.getRequestType() != HttpRequestType::GET)
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+        return true;
+    }
+
+    if (getSessionID(request).empty())
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::UNAUTHORIZED);
+
+        return true;
+    }
+
     std::string pathToResource = request.getPathToResource();
+    if (pathToResource == "/")
+    {
+        static HttpMutableMap locationHeader;
+        static bool once;
+
+        if (!once)
+        {
+            locationHeader.setValue("Location", ValueWrapper("/index.html"));
+            once = true;
+        }
+
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::FOUND)
+            .setHeaderMap(&locationHeader);
+
+        return true;
+    }
 
     pathToResource.insert(0, "resources");
-    responseBuilder.reset();
-
     std::string fileContents;
+
     if (!readFile(pathToResource, fileContents))
     {
         responseBuilder
+            .reset()
             .setStatusCode(HttpStatusCode::NOT_FOUND);
+
+        return true;
     }
 
     const std::string& extension = request.getResourceExtension();
+    responseBuilder.reset();
 
     if (extension == "html" || extension == "HTML")
         responseBuilder.setContentType(HttpContentType::HTML);
@@ -266,17 +305,13 @@ std::string Server::generateRandomSessionID()
 
 bool Server::subhandleRequestAsLogin(const HttpRequest& request)
 {
-
-    if (request.getRequestType() != HttpRequestType::POST)
-        return false;
-
     std::string pathToResource = request.getPathToResource();
     if (pathToResource != "/login")
         return false;
 
     const HttpImmutableMap& bodyParams = request.getBodyParametersMap();
 
-    if (!bodyParams.hasKey("username") || !bodyParams.hasKey("password"))
+    if (request.getRequestType() != HttpRequestType::POST || !bodyParams.hasKey("username") || !bodyParams.hasKey("password"))
     {
         responseBuilder
             .reset()
@@ -288,7 +323,6 @@ bool Server::subhandleRequestAsLogin(const HttpRequest& request)
     const std::string& username = bodyParams.getValue("username").getAsString();
     const std::string& password = bodyParams.getValue("password").getAsString();
 
-    logger << "Check for username and password" << std::endl;
     if (username != configMap.getValue("login_user").getAsString() ||
         password != configMap.getValue("login_password").getAsString() )
     {
@@ -299,14 +333,13 @@ bool Server::subhandleRequestAsLogin(const HttpRequest& request)
         return true;
     }
 
-    logger << "User and pass ok" << std::endl;
     std::string newSessionId;
     const HttpImmutableMap& cookies = request.getCookiesMap();
-    const std::string& sessionId = cookies.getValue("SESSIONID").getAsString();
+    const std::string& sessionId = getSessionID(request);
 
     static HttpMutableMap locationHeader;
     static bool once;
-    if (!cookies.hasKey("SESSIONID") || std::find(sessions.begin(), sessions.end(), sessionId) == sessions.end())
+    if (sessionId.empty())
     {
         do
         {
@@ -335,6 +368,85 @@ bool Server::subhandleRequestAsLogin(const HttpRequest& request)
     return true;
 }
 
+bool Server::subhandleRequestAsConfig(const HttpRequest& request)
+{
+    if (request.getPathToResource() != "/config")
+        return false;
+
+    HttpRequestType requestType = request.getRequestType();
+
+    if (requestType != HttpRequestType::GET && requestType != HttpRequestType::PUT)
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::BAD_REQUEST);
+
+        return true;
+    }
+
+    if (getSessionID(request).empty())
+    {
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::UNAUTHORIZED);
+
+        return true;
+    }
+
+    if (requestType == HttpRequestType::PUT)
+    {
+        const HttpImmutableMap& bodyParams = request.getBodyParametersMap();
+
+        const std::string& ssid = bodyParams.getValue("ssid").getAsString();
+        const std::string& password = bodyParams.getValue("password").getAsString();
+        const std::string& login_user = bodyParams.getValue("login_user").getAsString();
+        const std::string& login_password = bodyParams.getValue("login_password").getAsString();
+
+        if (!ssid.empty())
+            configMap.setValue("ssid", ValueWrapper(ssid));
+
+        if (!password.empty())
+            configMap.setValue("password", ValueWrapper(password));
+
+       if (!login_user.empty())
+            configMap.setValue("login_user", ValueWrapper(login_user));
+
+       if (!login_password.empty())
+            configMap.setValue("login_password", ValueWrapper(login_password));
+
+        responseBuilder
+            .reset()
+            .setStatusCode(HttpStatusCode::OK);
+
+        return true;
+    }
+
+    responseBuilder
+        .reset()
+        .setJsonMap(&configMap)
+        .setStatusCode(HttpStatusCode::OK);
+
+    return true;
+}
+
+const std::string& Server::getSessionID(const HttpRequest& request)
+{
+    static std::string emptySessionID;
+
+    const HttpImmutableMap& cookies = request.getCookiesMap();
+
+    if (!cookies.hasKey("SESSIONID"))
+        return emptySessionID;
+
+    const std::string& sessionID = cookies.getValue("SESSIONID").getAsString();
+
+    if (sessionID.empty() || std::find(sessions.begin(), sessions.end(), sessionID) == sessions.end())
+        return emptySessionID;
+
+    return sessionID;
+
+}
+
 void Server::start()
 {
     const int MAX_BUFFER_LENGTH = 10240;
@@ -356,13 +468,9 @@ void Server::start()
         ssl = SSL_new(sslContext);
         SSL_set_fd(ssl, client);
 
-        if (SSL_accept(ssl) <= 0) 
+        if (SSL_accept(ssl) > 0) 
         {
-            logger << "SSL accept failed" << std::endl 
-            << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
-        }
-        else 
-        {
+            logger << "SSL accept success" << std::endl;
             int bytesRead;
             if ((bytesRead = SSL_read(ssl, buffer, MAX_BUFFER_LENGTH)) > 0)
             {
@@ -390,11 +498,33 @@ Server::Server(std::ostream& logger)
     configureContext();
 
     std::string rawConfig;
-    readFile("config", rawConfig);
+    if (!readFile("config", rawConfig))
+    {
+        logger << "No config present" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
-    configMap.parseKeyValuePairs((char*)rawConfig.c_str(), '\n', '\0');
+    if (configMap.parseKeyValuePairs((char*)rawConfig.data(), '\n', '\0') == nullptr)
+    {
+        logger << "Invalid config format" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
-    wirelessConnectionManager = new WirelessConnectionManager(configMap.getValue("ssid").getAsString(), configMap.getValue("password").getAsString());
+    const std::string& ssid = configMap.getValue("ssid").getAsString();
+    const std::string& password = configMap.getValue("password").getAsString();
+    const std::string& loginUser = configMap.getValue("login_user").getAsString();
+    const std::string& loginPassword = configMap.getValue("login_password").getAsString();
+
+    if (ssid.empty() ||
+        password.empty() ||
+        loginUser.empty() ||
+        loginPassword.empty())
+    {
+        logger << "Illegal empty values detected (or missing values) from config" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    wirelessConnectionManager = new WirelessConnectionManager(ssid, password);
 
     createSocket();
     start();

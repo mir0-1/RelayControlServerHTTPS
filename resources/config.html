@@ -27,14 +27,12 @@
       let password = document.querySelector('#Password');
       let http_username = document.querySelector('#http_username');
       let http_password = document.querySelector('#http_password');
-      // Creating a XHR object
+
       let xhr = new XMLHttpRequest();
       let url = "/config";
     
-      // open a connection
-      xhr.open("POST", url, true);
+      xhr.open("PUT", url, true);
     
-      // Set the request header i.e. which type of content you are sending
       xhr.setRequestHeader("Content-Type", "application/json");
     
       // Create a state change callback
@@ -42,15 +40,16 @@
       {
           if (xhr.readyState === 4 && xhr.status === 200) 
           {
-    
-              // Print received data from server
-              result.innerHTML = this.responseText;
-    
+              result.innerHTML = "Success";
+          }
+          else
+          {
+            result.innerHTML = "Fail";
           }
       };
     
       // Converting JSON data to string
-      var data = JSON.stringify({ "ssid": ssid.value, "password": password.value, "http_username": http_username.value, "http_password": http_password.value,  });
+      var data = JSON.stringify({ "ssid": ssid.value, "password": password.value, "login_username": http_username.value, "login_password": http_password.value,  });
     
       // Sending data with the request
       xhr.send(data);
