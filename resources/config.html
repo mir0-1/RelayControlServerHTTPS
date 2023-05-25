@@ -16,7 +16,7 @@
       <button  onclick="sendJSON()">Save</button>
     </div>
     <!-- For printing result from server -->
-    <p class="result" style="color:green"></p>
+    <p class="result"></p>
     <!-- </p> -->
   </body>
   <script>
@@ -41,10 +41,12 @@
           if (xhr.readyState === 4 && xhr.status === 200) 
           {
               result.innerHTML = "Success";
+              result.style.color = "green";
           }
           else
           {
             result.innerHTML = "Fail";
+            result.style.color = "red";
           }
       };
     

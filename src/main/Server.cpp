@@ -97,6 +97,19 @@ bool Server::readFile(const std::string& path, std::string& out)
     return true;
 }
 
+bool Server::writeFile(const std::string& path, const std::string& contents)
+{
+    std::ofstream file(path);
+
+    if (!file.is_open())
+        return false;
+
+    file.write(contents.c_str(), contents.length());
+    file.close();
+
+    return true;
+}
+
 void Server::handleRequest(const HttpRequest& request)
 {
     HttpRequestType requestType = request.getRequestType();
@@ -235,26 +248,16 @@ bool Server::subhandleRequestAsFile(const HttpRequest& request)
         return true;
     }
 
-    if (getSessionID(request).empty())
-    {
-        responseBuilder
-            .reset()
-            .setStatusCode(HttpStatusCode::UNAUTHORIZED);
-
-        return true;
-    }
+    const std::string& sessionID = getSessionID(request);
+    static HttpMutableMap locationHeader;
 
     std::string pathToResource = request.getPathToResource();
     if (pathToResource == "/")
     {
-        static HttpMutableMap locationHeader;
-        static bool once;
-
-        if (!once)
-        {
+        if (!sessionID.empty())
             locationHeader.setValue("Location", ValueWrapper("/index.html"));
-            once = true;
-        }
+        else
+            locationHeader.setValue("Location", ValueWrapper("/login.html"));
 
         responseBuilder
             .reset()
@@ -328,6 +331,7 @@ bool Server::subhandleRequestAsLogin(const HttpRequest& request)
     {
         responseBuilder
             .reset()
+            .setRawBody("Invalid login credentials")
             .setStatusCode(HttpStatusCode::UNAUTHORIZED);
 
         return true;
@@ -413,6 +417,16 @@ bool Server::subhandleRequestAsConfig(const HttpRequest& request)
 
        if (!login_password.empty())
             configMap.setValue("login_password", ValueWrapper(login_password));
+
+        if (!writeFile("config", configMap.toString()))
+        {
+            responseBuilder
+                .reset()
+                .setRawBody("Internal server error")
+                .setStatusCode(HttpStatusCode::INTERNAL_SERVER_ERROR);
+
+            return true;
+        }
 
         responseBuilder
             .reset()

@@ -23,6 +23,7 @@ class Server
 		std::string generateRandomSessionID();
 		const std::string& getSessionID(const HttpRequest& request);
 		bool readFile(const std::string& path, std::string& out);
+		bool writeFile(const std::string& path, const std::string& contents);
 		void createSocket();
 		void createContext();
 		void configureContext();
