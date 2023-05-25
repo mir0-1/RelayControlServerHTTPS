@@ -1,6 +1,6 @@
-ssid=MiroS_2.5GHz
-password=11807711
-login_user=test
 login_password=886655
-ip=192.168.1.13
 port=80
+login_user=test
+ip=192.168.2.226
+password=11807711
+ssid=MiroS_2.5GHz
