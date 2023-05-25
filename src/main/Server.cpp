@@ -406,6 +406,11 @@ bool Server::subhandleRequestAsConfig(const HttpRequest& request)
         const std::string& login_user = bodyParams.getValue("login_user").getAsString();
         const std::string& login_password = bodyParams.getValue("login_password").getAsString();
 
+        logger << ssid << std::endl;
+        logger << password << std::endl;
+        logger << login_user << std::endl;
+        logger << login_password << std::endl;
+
         if (!ssid.empty())
             configMap.setValue("ssid", ValueWrapper(ssid));
 
